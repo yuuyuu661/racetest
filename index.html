@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Oasis Race Portal</title>
+
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --btn: #1f2937;
+      --btn-hover: #374151;
+      --accent: #22c55e;
+      --text: #e5e7eb;
+      --sub: #9ca3af;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: url("static/bg/portal.png") center/cover no-repeat fixed;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at top, rgba(15,23,42,0.55), rgba(2,6,23,0.85));
+      z-index: 0;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 420px;
+      padding: 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .title {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .title h1 {
+      margin: 0;
+      font-size: 1.8rem;
+      letter-spacing: 0.05em;
+    }
+
+    .title p {
+      margin-top: 8px;
+      font-size: 0.9rem;
+      color: var(--sub);
+    }
+
+    .menu {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .menu a {
+      text-decoration: none;
+    }
+
+    .menu-button {
+      background: linear-gradient(180deg, var(--btn), #020617);
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 20px;
+      text-align: center;
+      transition: transform 0.15s ease, background 0.15s ease;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    }
+
+    .menu-button:hover {
+      background: linear-gradient(180deg, var(--btn-hover), #020617);
+      transform: translateY(-2px);
+    }
+
+    .menu-button .emoji {
+      font-size: 1.6rem;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .menu-button .label {
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+
+    .menu-button .desc {
+      font-size: 0.75rem;
+      color: var(--sub);
+      margin-top: 4px;
+    }
+
+    .footer {
+      margin-top: 32px;
+      text-align: center;
+      font-size: 0.7rem;
+      color: #64748b;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <div class="title">
+      <h1>🏁 Oasis Race</h1>
+      <p>最強を掴め！</p>
+    </div>
+
+    <div class="menu">
+      <a href="#" id="raceLink">
+        <div class="menu-button">
+          <span class="emoji">🏁</span>
+          <div class="label">試合結果確認</div>
+          <div class="desc">レースの結果を見る</div>
+        </div>
+      </a>
+
+      <a href="#" id="buyLink">
+        <div class="menu-button">
+          <span class="emoji">🎫</span>
+          <div class="label">〇券購入</div>
+          <div class="desc">チケット購入</div>
+        </div>
+      </a>
+
+      <a href="#">
+        <div class="menu-button">
+          <span class="emoji">🏆</span>
+          <div class="label">入賞ランキング</div>
+          <div class="desc">準備中</div>
+        </div>
+      </a>
+    </div>
+
+    <div class="footer">
+      Oasis Project ©
+    </div>
+  </div>
+  <script>
+  const params = new URLSearchParams(window.location.search);
+
+  const user = params.get("user");
+  const guild = params.get("guild");
+  const race = params.get("race");
+  const token = params.get("token");
+
+  const API_BASE = "https://api.oasis.red";
+
+  if (!guild) {
+
+  document.body.innerHTML = "<h1>不正アクセスです</h1>";
+
+} else {
+
+  function setupLinks() {
+
+    document.getElementById("raceLink").href =
+      `race.html?guild=${guild}&user=${user || ""}&race=${race || ""}&token=${token || ""}`;
+
+    document.getElementById("buyLink").href =
+      `buy.html?guild=${guild}&user=${user || ""}&race=${race || ""}&token=${token || ""}`;
+  }
+
+  // token がある場合だけ verify
+  if (user && race && token) {
+
+    fetch(`${API_BASE}/api/verify?user=${user}&guild=${guild}&race=${race}&token=${token}`)
+      .then(res => {
+        if (!res.ok) throw new Error("Invalid token");
+        return res.json();
+      })
+      .then(data => {
+        console.log("認証成功", data);
+        setupLinks();
+      })
+      .catch(err => {
+        console.log("verify failed:", err);
+        setupLinks(); // ← 失敗しても表示は許可
+      });
+
+  } else {
+
+    // 抽選前・未認証でも表示OK
+    setupLinks();
+
+  }
+
+}
+  </script>
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
