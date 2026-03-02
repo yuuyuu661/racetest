@@ -285,6 +285,10 @@ const RACE_DATE = params.get("date");
 const RACE_NO = params.get("no");
 const RACE_ID = params.get("race");
 
+if (!RACE_ID) {
+  alert("race が不足しています");
+  throw new Error("Missing race");
+}
 if (!GUILD_ID) {
   alert("guild が不足しています");
   throw new Error("Missing guild");
@@ -665,7 +669,7 @@ async function updateTrifectaOdds() {
   }
 
   const res = await fetch(
-    `${API_BASE}/api/trifecta/odds?guild=${GUILD_ID}&race_date=${RACE_DATE}&schedule_id=${RACE_ID}&first=${first}&second=${second}&third=${third}`
+    `${API_BASE}/api/trifecta/odds?guild=${GUILD_ID}&schedule_id=${RACE_ID}&first=${first}&second=${second}&third=${third}`
   );
 
   const data = await res.json();
@@ -710,12 +714,11 @@ async function buyTrifecta() {
     },
     body: JSON.stringify({
       guild_id: GUILD_ID,
-      race_date: CURRENT_RACE_DATE,
-      schedule_id: CURRENT_SCHEDULE_ID,
-      first: first,
-      second: second,
-      third: third,
-      amount: amount
+      schedule_id: Number(RACE_ID),
+      first,
+      second,
+      third,
+      amount
     })
   });
 
@@ -829,6 +832,7 @@ document.getElementById("refreshBtn")
 
 </body>
 </html>
+
 
 
 
