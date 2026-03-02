@@ -601,7 +601,25 @@ function animate(ts = performance.now()) {
 
   requestAnimationFrame(animate);
 }
+  function populateTrifectaSelects(pets) {
+  const first = document.getElementById("firstSelect");
+  const second = document.getElementById("secondSelect");
+  const third = document.getElementById("thirdSelect");
 
+  first.innerHTML = '<option value="">1着選択</option>';
+  second.innerHTML = '<option value="">2着選択</option>';
+  third.innerHTML = '<option value="">3着選択</option>';
+
+  pets.forEach(p => {
+    const opt1 = new Option(p.name, p.pet_id);
+    const opt2 = new Option(p.name, p.pet_id);
+    const opt3 = new Option(p.name, p.pet_id);
+
+    first.add(opt1);
+    second.add(opt2);
+    third.add(opt3);
+  });
+}
 /* スタート */
 async function startRaceFromAPI() {
 
@@ -661,25 +679,7 @@ async function startRaceFromAPI() {
   setupRunners(data.pets);
   populateTrifectaSelects(data.pets);
 
-  function populateTrifectaSelects(pets) {
-  const first = document.getElementById("firstSelect");
-  const second = document.getElementById("secondSelect");
-  const third = document.getElementById("thirdSelect");
 
-  first.innerHTML = '<option value="">1着選択</option>';
-  second.innerHTML = '<option value="">2着選択</option>';
-  third.innerHTML = '<option value="">3着選択</option>';
-
-  pets.forEach(p => {
-    const opt1 = new Option(p.name, p.pet_id);
-    const opt2 = new Option(p.name, p.pet_id);
-    const opt3 = new Option(p.name, p.pet_id);
-
-    first.add(opt1);
-    second.add(opt2);
-    third.add(opt3);
-  });
-}
 
   // DB結果取得（schedule_idのみでOK）
   const resultRes = await fetch(
@@ -712,6 +712,7 @@ document.getElementById("refreshBtn")
 
 </body>
 </html>
+
 
 
 
