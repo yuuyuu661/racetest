@@ -620,6 +620,39 @@ function animate(ts = performance.now()) {
     third.add(opt3);
   });
 }
+
+/* =========================
+   🎯 3連単オッズ取得
+========================= */
+async function updateTrifectaOdds() {
+  const first = document.getElementById("firstSelect").value;
+  const second = document.getElementById("secondSelect").value;
+  const third = document.getElementById("thirdSelect").value;
+
+  if (!first || !second || !third) {
+    document.getElementById("trifectaOdds").innerText = "オッズ：--";
+    return;
+  }
+
+  if (new Set([first, second, third]).size !== 3) {
+    document.getElementById("trifectaOdds").innerText =
+      "同じおあしすっちは選べません";
+    return;
+  }
+
+  const res = await fetch(
+    `${API_BASE}/api/trifecta/odds?guild=${GUILD_ID}&race_date=${RACE_DATE}&schedule_id=${RACE_ID}&first=${first}&second=${second}&third=${third}`
+  );
+
+  const data = await res.json();
+
+  if (data.status === "no_bets") {
+    document.getElementById("trifectaOdds").innerText = "オッズ：未成立";
+  } else {
+    document.getElementById("trifectaOdds").innerText =
+      `オッズ：${data.odds}倍`;
+  }
+}
 /* スタート */
 async function startRaceFromAPI() {
 
@@ -679,6 +712,10 @@ async function startRaceFromAPI() {
   setupRunners(data.pets);
   populateTrifectaSelects(data.pets);
 
+  document.getElementById("firstSelect").onchange = updateTrifectaOdds;
+  document.getElementById("secondSelect").onchange = updateTrifectaOdds;
+  document.getElementById("thirdSelect").onchange = updateTrifectaOdds;
+
 
 
   // DB結果取得（schedule_idのみでOK）
@@ -712,6 +749,7 @@ document.getElementById("refreshBtn")
 
 </body>
 </html>
+
 
 
 
