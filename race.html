@@ -274,8 +274,7 @@ body {
 ========================= */
 const API_BASE = "https://oasisbot-production.up.railway.app";
 
-let CURRENT_RACE_DATE = null;
-let CURRENT_SCHEDULE_ID = null;
+
 
 const DEFAULT_GUILD_ID = "1420918259187712093";
 
@@ -752,8 +751,7 @@ async function startRaceFromAPI() {
 
   const data = await res.json();
 
-  CURRENT_RACE_DATE = data.race_date;
-  CURRENT_SCHEDULE_ID = data.schedule_id;
+
 
   if (!data.locked || !data.pets || data.pets.length === 0) {
     alert("出走が確定していません");
@@ -832,6 +830,7 @@ document.getElementById("refreshBtn")
 
 </body>
 </html>
+
 
 
 
