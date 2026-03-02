@@ -182,8 +182,10 @@ body {
 
   <input id="trifectaAmount"
          type="number"
-         min="1"
-         placeholder="購入金額"
+         min="10000"
+         max="100000"
+         step="10000"
+         placeholder="購入金額（1口=10,000 / 最大10口）"
          style="width:100%; margin-top:8px; padding:6px; border-radius:6px; border:none;">
 
   <button id="buyTrifectaBtn"
@@ -509,6 +511,48 @@ async function buyTrifecta() {
     alert("購入金額を入力してください");
     return;
   }
+  const TRI_UNIT = 10000;
+  const TRI_MAX  = 100000; // 10口
+
+  if (amount % TRI_UNIT !== 0) {
+    alert("3連単は1口10,000rrc単位です");
+    return;
+  }
+
+  if (amount > TRI_MAX) {
+    alert("3連単は最大10口（100,000rrc）までです");
+    return;
+  }
+  // ★ここまで追加
+
+  const res = await fetch(`${API_BASE}/api/trifecta/buy`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      user: USER_ID,
+      guild: GUILD_ID,
+      schedule_id: window.currentScheduleId,
+      first,
+      second,
+      third,
+      amount,
+      token: TOKEN
+    })
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    alert(data.detail || "購入失敗");
+    return;
+  }
+
+  alert(`3連単購入成功！
+残り購入可能: ${data.remaining_units}口`);
+
+  loadBalance();
+  updateTrifectaOdds();
+}
 
   const res = await fetch(`${API_BASE}/api/trifecta/buy`, {
     method: "POST",
@@ -626,6 +670,7 @@ document.getElementById("refreshBtn")
 </body>
 
 </html>
+
 
 
 
