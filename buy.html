@@ -162,9 +162,39 @@ body {
     <!-- JSでカード生成 -->
   </div>
 </div>
+<div class="trifecta-panel" style="
+  max-width:1200px;
+  margin:20px auto;
+  background: rgba(15, 23, 42, 0.9);
+  padding: 16px;
+  border-radius: 12px;
+  color: white;
+">
+  <h3>🎯 3連単</h3>
+
+  <div class="trifecta-selects">
+    <select id="firstSelect"></select>
+    <select id="secondSelect"></select>
+    <select id="thirdSelect"></select>
+  </div>
+
+  <div id="trifectaOdds" style="margin-top:6px;">オッズ：--</div>
+
+  <input id="trifectaAmount"
+         type="number"
+         min="1"
+         placeholder="購入金額"
+         style="width:100%; margin-top:8px; padding:6px; border-radius:6px; border:none;">
+
+  <button id="buyTrifectaBtn"
+          style="width:100%; margin-top:6px; padding:8px; border:none; border-radius:8px; background:#16a34a; color:white; cursor:pointer;">
+    🎫 3連単を購入
+  </button>
+</div>
 
 <script>
 console.log("最新版 buy.html 読み込まれてます");
+
 /* =========================
    API 設定（★追加）
 ========================= */
@@ -391,8 +421,121 @@ async function loadRacePets() {
 
   renderPets(pets);
   updateAllSlidersMax();
+  populateTrifectaSelects(pets);
+  setupTrifectaEvents();
 }
-  
+
+function populateTrifectaSelects(pets) {
+  const first = document.getElementById("firstSelect");
+  const second = document.getElementById("secondSelect");
+  const third = document.getElementById("thirdSelect");
+
+  first.innerHTML = '<option value="">1着</option>';
+  second.innerHTML = '<option value="">2着</option>';
+  third.innerHTML = '<option value="">3着</option>';
+
+  pets.forEach(p => {
+    first.add(new Option(p.name, p.id));
+    second.add(new Option(p.name, p.id));
+    third.add(new Option(p.name, p.id));
+  });
+}  
+
+function setupTrifectaEvents() {
+  document.getElementById("firstSelect").onchange = updateTrifectaOdds;
+  document.getElementById("secondSelect").onchange = updateTrifectaOdds;
+  document.getElementById("thirdSelect").onchange = updateTrifectaOdds;
+
+  document.getElementById("buyTrifectaBtn").onclick = buyTrifecta;
+}
+
+async function updateTrifectaOdds() {
+
+  const firstSelect = document.getElementById("firstSelect");
+  const secondSelect = document.getElementById("secondSelect");
+  const thirdSelect = document.getElementById("thirdSelect");
+  const trifectaOdds = document.getElementById("trifectaOdds");
+
+  const first = firstSelect.value;
+  const second = secondSelect.value;
+  const third = thirdSelect.value;
+
+  if (!first || !second || !third) {
+    trifectaOdds.innerText = "オッズ：--";
+    return;
+  }
+
+  if (new Set([first, second, third]).size !== 3) {
+    trifectaOdds.innerText = "同じおあしすっちは選べません";
+    return;
+  }
+
+  const res = await fetch(
+    `${API_BASE}/api/trifecta/odds?guild=${GUILD_ID}&schedule_id=${window.currentScheduleId}&first=${first}&second=${second}&third=${third}`
+  );
+
+  if (!res.ok) {
+    trifectaOdds.innerText = "オッズ取得失敗";
+    return;
+  }
+
+  const data = await res.json();
+
+  if (data.status === "no_bets") {
+    trifectaOdds.innerText = "オッズ：未成立";
+  } else {
+    trifectaOdds.innerText = `オッズ：${data.odds}倍`;
+  }
+}
+
+async function buyTrifecta() {
+
+  const first = document.getElementById("firstSelect").value;
+  const second = document.getElementById("secondSelect").value;
+  const third = document.getElementById("thirdSelect").value;
+  const amount = parseInt(document.getElementById("trifectaAmount").value);
+
+  if (!first || !second || !third) {
+    alert("組み合わせを選択してください");
+    return;
+  }
+
+  if (new Set([first, second, third]).size !== 3) {
+    alert("同じおあしすっちは選べません");
+    return;
+  }
+
+  if (!amount || amount <= 0) {
+    alert("購入金額を入力してください");
+    return;
+  }
+
+  const res = await fetch(`${API_BASE}/api/trifecta/buy`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      user: USER_ID,
+      guild: GUILD_ID,
+      schedule_id: window.currentScheduleId,
+      first,
+      second,
+      third,
+      amount,
+      token: TOKEN
+    })
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    alert(data.detail || "購入失敗");
+    return;
+  }
+
+  alert("3連単購入成功！");
+  loadBalance();
+  updateTrifectaOdds();
+}
 /* =========================
    購入（仮）
 ========================= */
@@ -483,6 +626,7 @@ document.getElementById("refreshBtn")
 </body>
 
 </html>
+
 
 
 
