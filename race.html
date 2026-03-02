@@ -182,31 +182,6 @@ body {
   margin-top: -2px;
   z-index: 4;
 }
-
-.trifecta-panel {
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
-  background: rgba(15, 23, 42, 0.9);
-  padding: 16px;
-  border-radius: 12px;
-  z-index: 100;
-  color: white;
-  min-width: 220px;
-}
-
-.trifecta-panel h3 {
-  margin: 0 0 8px;
-  font-size: 1rem;
-}
-
-.trifecta-selects select {
-  width: 100%;
-  margin-bottom: 6px;
-  padding: 4px;
-  border-radius: 6px;
-  border: none;
-}
 </style>
 </head>
 
@@ -232,41 +207,7 @@ body {
 <div class="race-wrapper">
   <div class="track-bg grass" id="trackBg"></div>
 </div>
-<!-- =========================
-     🎯 3連単 UI
-========================= -->
-<div class="trifecta-panel">
-  <h3>🎯 3連単</h3>
 
-  <div class="trifecta-selects">
-    <select id="firstSelect"></select>
-    <select id="secondSelect"></select>
-    <select id="thirdSelect"></select>
-  </div>
-
-  <div id="trifectaOdds">オッズ：--</div>
-
-  <input id="trifectaAmount" type="number" min="1" placeholder="購入金額" style="
-  width:100%;
-  margin-top:8px;
-  padding:4px;
-  border-radius:6px;
-  border:none;
-">
-
-<button id="buyTrifectaBtn" style="
-  width:100%;
-  margin-top:6px;
-  padding:6px;
-  border:none;
-  border-radius:8px;
-  background:#16a34a;
-  color:white;
-  cursor:pointer;
-">
-  🎫 3連単を購入
-</button>
-</div>
 <script>
 
 /* =========================
@@ -628,108 +569,7 @@ function animate(ts = performance.now()) {
 
   requestAnimationFrame(animate);
 }
-  function populateTrifectaSelects(pets) {
-  const first = document.getElementById("firstSelect");
-  const second = document.getElementById("secondSelect");
-  const third = document.getElementById("thirdSelect");
 
-  first.innerHTML = '<option value="">1着選択</option>';
-  second.innerHTML = '<option value="">2着選択</option>';
-  third.innerHTML = '<option value="">3着選択</option>';
-
-  pets.forEach(p => {
-    const opt1 = new Option(p.name, p.pet_id);
-    const opt2 = new Option(p.name, p.pet_id);
-    const opt3 = new Option(p.name, p.pet_id);
-
-    first.add(opt1);
-    second.add(opt2);
-    third.add(opt3);
-  });
-}
-
-/* =========================
-   🎯 3連単オッズ取得
-========================= */
-async function updateTrifectaOdds() {
-  const first = document.getElementById("firstSelect").value;
-  const second = document.getElementById("secondSelect").value;
-  const third = document.getElementById("thirdSelect").value;
-
-  if (!first || !second || !third) {
-    document.getElementById("trifectaOdds").innerText = "オッズ：--";
-    return;
-  }
-
-  if (new Set([first, second, third]).size !== 3) {
-    document.getElementById("trifectaOdds").innerText =
-      "同じおあしすっちは選べません";
-    return;
-  }
-
-  const res = await fetch(
-    `${API_BASE}/api/trifecta/odds?guild=${GUILD_ID}&schedule_id=${RACE_ID}&first=${first}&second=${second}&third=${third}`
-  );
-
-  const data = await res.json();
-
-  if (data.status === "no_bets") {
-    document.getElementById("trifectaOdds").innerText = "オッズ：未成立";
-  } else {
-    document.getElementById("trifectaOdds").innerText =
-      `オッズ：${data.odds}倍`;
-  }
-}
-
-/* =========================
-   💰 3連単購入
-========================= */
-async function buyTrifecta() {
-
-  const first = document.getElementById("firstSelect").value;
-  const second = document.getElementById("secondSelect").value;
-  const third = document.getElementById("thirdSelect").value;
-  const amount = parseInt(document.getElementById("trifectaAmount").value);
-
-  if (!first || !second || !third) {
-    alert("組み合わせを選択してください");
-    return;
-  }
-
-  if (new Set([first, second, third]).size !== 3) {
-    alert("同じおあしすっちは選べません");
-    return;
-  }
-
-  if (!amount || amount <= 0) {
-    alert("購入金額を入力してください");
-    return;
-  }
-
-  const res = await fetch(`${API_BASE}/api/trifecta/buy`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      guild_id: GUILD_ID,
-      schedule_id: Number(RACE_ID),
-      first,
-      second,
-      third,
-      amount
-    })
-  });
-
-  const data = await res.json();
-
-  if (data.status === "ok") {
-    alert("購入完了！");
-    updateTrifectaOdds(); // オッズ更新
-  } else {
-    alert(data.message || "購入失敗");
-  }
-}
 /* スタート */
 async function startRaceFromAPI() {
 
@@ -789,13 +629,7 @@ async function startRaceFromAPI() {
 
   setupSigns();
   setupRunners(data.pets);
-  populateTrifectaSelects(data.pets);
 
-  document.getElementById("firstSelect").onchange = updateTrifectaOdds;
-  document.getElementById("secondSelect").onchange = updateTrifectaOdds;
-  document.getElementById("thirdSelect").onchange = updateTrifectaOdds;
-
-  document.getElementById("buyTrifectaBtn").onclick = buyTrifecta;
 
 
 
@@ -830,6 +664,7 @@ document.getElementById("refreshBtn")
 
 </body>
 </html>
+
 
 
 
