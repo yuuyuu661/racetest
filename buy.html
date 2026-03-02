@@ -251,6 +251,7 @@ let remainingUnitsGlobal = 100;
 
 if (!USER_ID || !RACE_ID || !TOKEN) {
   document.body.innerHTML = "<h1>不正アクセスです</h1>";
+  throw new Error("Missing params");
 }
 
 
@@ -643,6 +644,7 @@ document.getElementById("refreshBtn")
 </body>
 
 </html>
+
 
 
 
