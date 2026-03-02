@@ -245,6 +245,27 @@ body {
   </div>
 
   <div id="trifectaOdds">オッズ：--</div>
+
+  <input id="trifectaAmount" type="number" min="1" placeholder="購入金額" style="
+  width:100%;
+  margin-top:8px;
+  padding:4px;
+  border-radius:6px;
+  border:none;
+">
+
+<button id="buyTrifectaBtn" style="
+  width:100%;
+  margin-top:6px;
+  padding:6px;
+  border:none;
+  border-radius:8px;
+  background:#16a34a;
+  color:white;
+  cursor:pointer;
+">
+  🎫 3連単を購入
+</button>
 </div>
 <script>
 
@@ -252,6 +273,9 @@ body {
    API 設定（★追加）
 ========================= */
 const API_BASE = "https://oasisbot-production.up.railway.app";
+
+let CURRENT_RACE_DATE = null;
+let CURRENT_SCHEDULE_ID = null;
 
 const DEFAULT_GUILD_ID = "1420918259187712093";
 
@@ -653,6 +677,57 @@ async function updateTrifectaOdds() {
       `オッズ：${data.odds}倍`;
   }
 }
+
+/* =========================
+   💰 3連単購入
+========================= */
+async function buyTrifecta() {
+
+  const first = document.getElementById("firstSelect").value;
+  const second = document.getElementById("secondSelect").value;
+  const third = document.getElementById("thirdSelect").value;
+  const amount = parseInt(document.getElementById("trifectaAmount").value);
+
+  if (!first || !second || !third) {
+    alert("組み合わせを選択してください");
+    return;
+  }
+
+  if (new Set([first, second, third]).size !== 3) {
+    alert("同じおあしすっちは選べません");
+    return;
+  }
+
+  if (!amount || amount <= 0) {
+    alert("購入金額を入力してください");
+    return;
+  }
+
+  const res = await fetch(`${API_BASE}/api/trifecta/buy`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      guild_id: GUILD_ID,
+      race_date: CURRENT_RACE_DATE,
+      schedule_id: CURRENT_SCHEDULE_ID,
+      first: first,
+      second: second,
+      third: third,
+      amount: amount
+    })
+  });
+
+  const data = await res.json();
+
+  if (data.status === "ok") {
+    alert("購入完了！");
+    updateTrifectaOdds(); // オッズ更新
+  } else {
+    alert(data.message || "購入失敗");
+  }
+}
 /* スタート */
 async function startRaceFromAPI() {
 
@@ -673,6 +748,9 @@ async function startRaceFromAPI() {
   }
 
   const data = await res.json();
+
+  CURRENT_RACE_DATE = data.race_date;
+  CURRENT_SCHEDULE_ID = data.schedule_id;
 
   if (!data.locked || !data.pets || data.pets.length === 0) {
     alert("出走が確定していません");
@@ -716,6 +794,8 @@ async function startRaceFromAPI() {
   document.getElementById("secondSelect").onchange = updateTrifectaOdds;
   document.getElementById("thirdSelect").onchange = updateTrifectaOdds;
 
+  document.getElementById("buyTrifectaBtn").onclick = buyTrifecta;
+
 
 
   // DB結果取得（schedule_idのみでOK）
@@ -749,6 +829,7 @@ document.getElementById("refreshBtn")
 
 </body>
 </html>
+
 
 
 
