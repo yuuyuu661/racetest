@@ -327,8 +327,10 @@ function renderPets(list) {
       <div class="odds">オッズ ${pet.odds}</div>
 
       ${pet.myAmount > 0 ? `
-        <div class="my-bet">
-          🎯 あなた：${Math.floor(pet.myAmount / 1000)}口
+        <div id="singleUnits-${pet.id}" class="my-bet">
+          ${pet.myAmount > 0 
+            ? `🎯 あなた：${Math.floor(pet.myAmount / 1000)}口`
+            : ""}
         </div>
       ` : ""}
 
@@ -663,6 +665,8 @@ async function buyTicket(petId) {
 alert(`購入成功！
 ${units}口購入しました
 残り購入可能: ${data.remaining_units}口`);
+document.getElementById(`singleUnits-${petId}`).textContent =
+  `🎯 あなた：${units}口`;
 
 remainingUnitsGlobal = data.remaining_units;  // ← 追加
 
@@ -716,6 +720,7 @@ document.getElementById("refreshBtn")
 </body>
 
 </html>
+
 
 
 
