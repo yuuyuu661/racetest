@@ -188,13 +188,21 @@ body {
 
   <div id="trifectaOdds" style="margin-top:6px;">オッズ：--</div>
 
-  <input id="trifectaAmount"
-         type="number"
-         min="10000"
-         max="100000"
-         step="10000"
-         placeholder="購入金額（1口=10,000 / 最大10口）"
-         style="width:100%; margin-top:8px; padding:6px; border-radius:6px; border:none;">
+  <!-- ★ここをスライダーに変更 -->
+  <div style="margin-top:10px;">
+    <input type="range"
+           min="1"
+           max="10"
+           value="1"
+           id="trifectaSlider"
+           oninput="updateTrifectaDisplay()"
+           style="width:100%;">
+
+    <div id="trifectaDisplay"
+         style="text-align:center; margin-top:6px; font-size:0.85rem;">
+      1口（10,000 rrc）
+    </div>
+  </div>
 
   <button id="buyTrifectaBtn"
           style="width:100%; margin-top:6px; padding:8px; border:none; border-radius:8px; background:#16a34a; color:white; cursor:pointer;">
@@ -459,6 +467,15 @@ function populateTrifectaSelects(pets) {
   });
 }  
 
+
+function updateTrifectaDisplay() {
+  const slider = document.getElementById("trifectaSlider");
+  const units = parseInt(slider.value);
+  const amount = units * 10000;
+
+  document.getElementById("trifectaDisplay").innerText =
+    `${units}口（${amount.toLocaleString()} rrc）`;
+}
 function setupTrifectaEvents() {
   document.getElementById("firstSelect").onchange = updateTrifectaOdds;
   document.getElementById("secondSelect").onchange = updateTrifectaOdds;
@@ -511,7 +528,11 @@ async function buyTrifecta() {
   const first = document.getElementById("firstSelect").value;
   const second = document.getElementById("secondSelect").value;
   const third = document.getElementById("thirdSelect").value;
-  const amount = parseInt(document.getElementById("trifectaAmount").value);
+  const units = parseInt(
+    document.getElementById("trifectaSlider").value
+  );
+
+  const amount = units * 10000;
 
   if (!first || !second || !third) {
     alert("組み合わせを選択してください");
@@ -547,11 +568,11 @@ async function buyTrifecta() {
     body: JSON.stringify({
       user: USER_ID,
       guild: GUILD_ID,
-      schedule_id: window.currentScheduleId,
-      first,
-      second,
-      third,
-      amount,
+      race: parseInt(window.currentScheduleId), // ← 修正
+      first: parseInt(first),
+      second: parseInt(second),
+      third: parseInt(third),
+      amount: amount,
       token: TOKEN
     })
   });
@@ -660,6 +681,7 @@ document.getElementById("refreshBtn")
 </body>
 
 </html>
+
 
 
 
