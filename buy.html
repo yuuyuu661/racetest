@@ -326,13 +326,11 @@ function renderPets(list) {
 
       <div class="odds">オッズ ${pet.odds}</div>
 
-      ${pet.myAmount > 0 ? `
-        <div id="singleUnits-${pet.id}" class="my-bet">
-          ${pet.myAmount > 0 
-            ? `🎯 あなた：${Math.floor(pet.myAmount / 1000)}口`
-            : ""}
-        </div>
-      ` : ""}
+      <div id="singleUnits-${pet.id}" class="my-bet">
+        ${pet.myAmount > 0 
+          ? `🎯 あなた：${Math.floor(pet.myAmount / 1000)}口`
+          : ""}
+      </div>
 
       <div style="margin-top:10px;">
         <input type="range"
@@ -720,6 +718,7 @@ document.getElementById("refreshBtn")
 </body>
 
 </html>
+
 
 
 
