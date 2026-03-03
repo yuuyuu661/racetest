@@ -596,7 +596,6 @@ async function buyTrifecta() {
 
   const slider = document.getElementById("trifectaSlider");
 
-  slider.max = data.remaining_units;
 
   if (data.remaining_units <= 0) {
     slider.value = 0;
@@ -706,6 +705,7 @@ document.getElementById("refreshBtn")
 </body>
 
 </html>
+
 
 
 
