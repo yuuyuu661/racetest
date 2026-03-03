@@ -611,19 +611,7 @@ async function buyTrifecta() {
 
   loadBalance();
   updateTrifectaOdds();
-  const unitsRes = await fetch(
-    `${API_BASE}/api/trifecta/user-units?guild=${GUILD_ID}&schedule_id=${window.currentScheduleId}&user=${USER_ID}&first=${first}&second=${second}&third=${third}`
-  );
 
-  if (unitsRes.ok) {
-    const unitsData = await unitsRes.json();
-
-    const myUnitsEl = document.getElementById("myTrifectaUnits");
-    if (myUnitsEl) {
-      myUnitsEl.textContent =
-        `あなたはこの組み合わせを ${unitsData.units} 口購入しています`;
-    }
-  }
 }
 /* =========================
    購入（仮）
@@ -718,6 +706,7 @@ document.getElementById("refreshBtn")
 </body>
 
 </html>
+
 
 
 
