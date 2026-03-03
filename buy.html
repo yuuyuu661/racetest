@@ -589,10 +589,10 @@ async function buyTrifecta() {
     return;
   }
 
-  alert(`3連単購入成功！
-  残り購入可能: ${data.remaining_units}口`);
+  alert(`3連単購入成功！`);
+
   document.getElementById("myTrifectaUnits").textContent =
-  `あなたはこの組み合わせを ${10 - data.remaining_units}口購入しています`;
+    `あなたはこの組み合わせを ${data.total_units}口購入しています`;
 
   const slider = document.getElementById("trifectaSlider");
 
@@ -718,6 +718,7 @@ document.getElementById("refreshBtn")
 </body>
 
 </html>
+
 
 
 
