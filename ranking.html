@@ -124,30 +124,51 @@ const PASSIVE_INFO = {
 };
 
 async function loadRanking(distance){
+
   const res = await fetch(`${API_BASE}/api/ranking/${GUILD_ID}/${distance}`);
   const data = await res.json();
+
   const list = document.getElementById("rankingList");
-  list.innerHTML="";
+  list.innerHTML = "";
+
+  if (!data.results || data.results.length === 0) {
+    list.innerHTML = "<div style='text-align:center; color:#9ca3af;'>まだ1着データがありません</div>";
+    return;
+  }
 
   data.results.forEach((r,i)=>{
+
+    const speed = r.base_speed + r.train_speed;
+    const power = r.base_power + r.train_power;
+    const stamina = r.base_stamina + r.train_stamina;
+
     const p = PASSIVE_INFO[r.passive_skill] || null;
 
     const card = document.createElement("div");
-    card.className="card";
-    card.innerHTML=`
+    card.className = "card";
+
+    card.innerHTML = `
       <div class="rank">${i+1}位</div>
+
       <img class="pet-img" src="/pets/${r.adult_key}.png">
+
       <div>
-        <div><b>${r.name}</b> (${r.username})</div>
+        <div><b>${r.name}</b> (ID:${r.user_id})</div>
+
         <div class="stats">
-          <div>S:${r.speed}</div>
-          <div>P:${r.power}</div>
-          <div>St:${r.stamina}</div>
+          <div>S:${r.base_speed}+${r.train_speed} (${speed})</div>
+          <div>P:${r.base_power}+${r.train_power} (${power})</div>
+          <div>St:${r.base_stamina}+${r.train_stamina} (${stamina})</div>
         </div>
-        <div>${p ? p.emoji + " " + p.label : "🧩 パッシブなし"}</div>
+
+        <div>
+          ${p ? p.emoji + " " + p.label : "🧩 パッシブなし"}
+        </div>
       </div>
+
       <div class="win">${r.win_count}勝</div>
     `;
+
     list.appendChild(card);
   });
 }
@@ -165,3 +186,4 @@ loadRanking("短距離");
 
 </body>
 </html>
+
