@@ -142,11 +142,11 @@
         </div>
       </a>
 
-      <a href="#">
+      <a href="#" id="rankingLink">
         <div class="menu-button">
           <span class="emoji">🏆</span>
           <div class="label">入賞ランキング</div>
-          <div class="desc">準備中</div>
+          <div class="desc">距離別ランキングを見る</div>
         </div>
       </a>
     </div>
@@ -178,6 +178,9 @@
 
     document.getElementById("buyLink").href =
       `buy.html?guild=${guild}&user=${user || ""}&race=${race || ""}&token=${token || ""}`;
+
+    document.getElementById("rankingLink").href =
+      `ranking.html?guild=${guild}`;
   }
 
   // token がある場合だけ verify
@@ -209,6 +212,7 @@
 </body>
 
 </html>
+
 
 
 
