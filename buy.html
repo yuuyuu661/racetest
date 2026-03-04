@@ -280,7 +280,13 @@ if (!USER_ID || !RACE_ID || !TOKEN) {
   document.body.innerHTML = "<h1>不正アクセスです</h1>";
   throw new Error("Missing params");
 }
+// 単勝
+const singleLocalUnits = {}; 
+// { petId: units }
 
+// 3連単
+const trifectaLocalUnits = {};
+// { "first-second-third": units }
 
 
   
@@ -533,6 +539,12 @@ async function updateTrifectaOdds() {
   } else {
     trifectaOdds.innerText = `オッズ：${data.odds}倍`;
   }
+  const key = `${first}-${second}-${third}`;
+
+  document.getElementById("myTrifectaUnits").textContent =
+    trifectaLocalUnits[key]
+      ? `🎯 この組み合わせ：${trifectaLocalUnits[key]}口購入中`
+      : "";
 }
 
 
@@ -612,8 +624,15 @@ async function buyTrifecta() {
 
   alert(`3連単購入成功！`);
 
+  const key = `${first}-${second}-${third}`;
+
+  // ローカル加算
+  trifectaLocalUnits[key] =
+    (trifectaLocalUnits[key] || 0) + units;
+
+  // 表示更新
   document.getElementById("myTrifectaUnits").textContent =
-    `あなたはこの組み合わせを ${data.total_units}口購入しています`;
+    `🎯 この組み合わせ：${trifectaLocalUnits[key]}口購入中`;
 
   const slider = document.getElementById("trifectaSlider");
 
@@ -672,13 +691,18 @@ async function buyTicket(petId) {
 alert(`購入成功！
 ${units}口購入しました
 残り購入可能: ${data.remaining_units}口`);
+
+// ★ ここからローカル加算
+singleLocalUnits[petId] =
+  (singleLocalUnits[petId] || 0) + units;
+
+// 表示更新
 document.getElementById(`singleUnits-${petId}`).textContent =
-  `🎯 あなた：${units}口`;
+  `🎯 あなた：${singleLocalUnits[petId]}口`;
 
 remainingUnitsGlobal = data.remaining_units;  // ← 追加
 
 updateAllSlidersMax();                       // ← 追加
-await loadRacePets();
 loadBalance();
 
   } catch (err) {
@@ -727,6 +751,7 @@ document.getElementById("refreshBtn")
 </body>
 
 </html>
+
 
 
 
