@@ -176,9 +176,18 @@ async function loadRanking(distance){
 
     const card = document.createElement("div");
     card.className = "card";
+    
+    if (i === 0) card.classList.add("gold");
+    if (i === 1) card.classList.add("silver");
+    if (i === 2) card.classList.add("bronze");
 
     card.innerHTML = `
-      <div class="rank">${i+1}位</div>
+      <div class="rank">
+        ${i === 0 ? "👑 1位" :
+          i === 1 ? "🥈 2位" :
+          i === 2 ? "🥉 3位" :
+          `${i+1}位`}
+      </div>
 
       <img class="pet-img" src="/pets/${r.adult_key}.png">
 
@@ -216,5 +225,6 @@ loadRanking("短距離");
 
 </body>
 </html>
+
 
 
