@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>上位おあしすっち券購入</title>
+
+<style>
+body {
+  margin: 0;
+  background: radial-gradient(circle at top, #020617, #000);
+  font-family: system-ui, sans-serif;
+  color: #e5e7eb;
+}
+
+.header {
+  text-align: center;
+  padding: 18px;
+  font-size: 1.4rem;
+  letter-spacing: 0.15em;
+}
+
+.container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 16px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+/* ===== カード ===== */
+.card {
+  background: linear-gradient(180deg, #0f172a, #020617);
+  border-radius: 18px;
+  padding: 14px;
+  box-shadow: 0 0 28px rgba(0,0,0,0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card-header {
+  display: flex;
+  gap: 12px;
+}
+
+/* GIF */
+.pet-gif {
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  background: #000;
+  overflow: hidden;
+}
+.pet-gif img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* 名前・コンディション */
+.pet-info {
+  flex: 1;
+}
+.pet-name {
+  font-size: 1rem;
+  font-weight: bold;
+}
+.condition {
+  font-size: 0.8rem;
+}
+.condition.good { color: #4ade80; }
+.condition.normal { color: #e5e7eb; }
+.condition.bad { color: #f87171; }
+
+/* ステータス */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  text-align: center;
+}
+.stat {
+  background: rgba(0,0,0,0.45);
+  border-radius: 10px;
+  padding: 6px 0;
+  font-size: 0.9rem;
+}
+.stat span {
+  display: block;
+  font-size: 0.65rem;
+  color: #9ca3af;
+}
+
+/* オッズ */
+.odds {
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #facc15;
+}
+
+/* 購入 */
+.buy-btn {
+  margin-top: auto;
+  padding: 10px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, #f59e0b, #facc15);
+  font-weight: bold;
+  cursor: pointer;
+}
+.buy-btn:hover {
+  box-shadow: 0 0 14px rgba(250,204,21,0.6);
+}
+/* パッシブ表示 */
+.passive{
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.06);
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+.passive-name{ font-weight: 700; }
+.passive-desc{ margin-top: 4px; color: rgba(226,232,240,0.9); }
+.passive.none{ color: rgba(148,163,184,0.95); }
+
+.my-bet {
+  margin-top: 6px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #22c55e;
+  font-weight: 700;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  🎟 上位おあしすっち券購入
+  <span id="balanceBox" style="
+    margin-left:20px;
+    font-size:0.9rem;
+    color:#22c55e;
+  ">
+    残高: 読み込み中...
+  </span>
+
+  <button id="refreshBtn" style="
+    margin-left:16px;
+    padding:6px 12px;
+    border-radius:10px;
+    border:none;
+    background:#334155;
+    color:white;
+    cursor:pointer;
+  ">
+    🔄 更新
+  </button>
+</div>
+
+<div class="container">
+  <div class="grid" id="petGrid">
+    <!-- JSでカード生成 -->
+  </div>
+</div>
+<div class="trifecta-panel" style="
+  max-width:1200px;
+  margin:20px auto;
+  background: rgba(15, 23, 42, 0.9);
+  padding: 16px;
+  border-radius: 12px;
+  color: white;
+">
+  <h3>
+    🎯 3連単
+    <span id="trifectaPool"
+          style="margin-left:12px; font-size:0.9rem; color:#facc15;">
+      💰読み込み中...
+    </span>
+  </h3>
+
+  <div class="trifecta-selects">
+    <select id="firstSelect"></select>
+    <select id="secondSelect"></select>
+    <select id="thirdSelect"></select>
+  </div>
+
+  <div id="trifectaOdds" style="margin-top:6px;">オッズ：--</div>
+
+  <!-- ★ここをスライダーに変更 -->
+  <div style="margin-top:10px;">
+    <input type="range"
+           min="1"
+           max="10"
+           value="1"
+           id="trifectaSlider"
+           oninput="updateTrifectaDisplay()"
+           style="width:100%;">
+
+    <div id="trifectaDisplay"
+         style="text-align:center; margin-top:6px; font-size:0.85rem;">
+      1口（10,000 rrc）
+    </div>
+
+    <!-- ★ここ追加 -->
+    <div id="myTrifectaUnits"
+         style="text-align:center; margin-top:4px; font-size:0.85rem; color:#00ffcc;">
+    </div>
+  </div>
+
+  <button id="buyTrifectaBtn"
+          style="width:100%; margin-top:6px; padding:8px; border:none; border-radius:8px; background:#16a34a; color:white; cursor:pointer;">
+    🎫 3連単を購入
+  </button>
+</div>
+
+<script>
+console.log("最新版 buy.html 読み込まれてます");
+
+/* =========================
+   API 設定（★追加）
+========================= */
+const API_BASE = "https://oasisbot-production.up.railway.app";
+// =========================
+// パッシブ辞書（表示用）※PythonのPASSIVE_SKILLS準拠
+// =========================
+const PASSIVE_INFO = {
+  // 単体強化（小）
+  speed_s:   { label: "スピード小アップ", emoji: "🏃", description: "スピードが少し上がる。" },
+  stamina_s: { label: "スタミナ小アップ", emoji: "🫀", description: "スタミナが少し上がる。" },
+  power_s:   { label: "パワー小アップ",   emoji: "💥", description: "パワーが少し上がる。" },
+
+  // 単体強化（大）
+  speed_l:   { label: "スピード大アップ", emoji: "🚀", description: "スピードが大幅に上がる。" },
+  stamina_l: { label: "スタミナ大アップ", emoji: "❤️‍🔥", description: "スタミナが大幅に上がる。" },
+  power_l:   { label: "パワー大アップ",   emoji: "💣", description: "パワーが大幅に上がる。" },
+
+  // 全体系
+  jack_of_all: { label: "器用貧乏", emoji: "🌈", description: "すべてのステータスが少し上がる。" },
+
+  // トレードオフ系
+  muscle_head:   { label: "脳筋",         emoji: "💪", description: "パワーが大幅に上がる代わりにスピードが少し下がる。" },
+  speed_star:    { label: "スピードスター", emoji: "⚡", description: "スピードが大幅に上がる代わりにスタミナが少し下がる。" },
+  steady_runner: { label: "マイペース",     emoji: "🐢", description: "スタミナが大幅に上がる代わりにパワーが少し下がる。" },
+
+  // 条件系
+  gambler:         { label: "勝負師",   emoji: "🔥", description: "少し根性が発動しやすくなる。" },
+  turf_specialist: { label: "芝得意",   emoji: "🌱", description: "バ場が芝のとき、すべてのステータスが少し上がる。" },
+  dirt_specialist: { label: "ダート得意", emoji: "🏜️", description: "バ場がダートのとき、すべてのステータスが少し上がる。" },
+  same_kind_boost: { label: "同族嫌悪", emoji: "👥", description: "同じ種類のおあしすっちが出場しているとき、全ステータスが大幅に上がる。" },
+
+  // 距離適性
+  short_special:  { label: "短距離得意", emoji: "🏎️", description: "短距離レースで全ステータスが上がる。" },
+  mile_special:   { label: "マイル得意", emoji: "🏇", description: "マイルレースで全ステータスが上がる。" },
+  middle_special: { label: "中距離得意", emoji: "🏃‍♂️", description: "中距離レースで全ステータスが上がる。" },
+  long_special:   { label: "遠距離得意", emoji: "🌌", description: "遠距離レースで全ステータスが上がる。" }
+};
+
+const DEFAULT_GUILD_ID = "1420918259187712093"; // ←ここに固定ID
+
+const params = new URLSearchParams(window.location.search);
+const MODE = "elite";
+
+const GUILD_ID = params.get("guild") || DEFAULT_GUILD_ID;
+const USER_ID = params.get("user");
+const RACE_ID = params.get("race");
+const TOKEN = params.get("token");
+
+const RACE_DATE = params.get("date");
+const RACE_NO = params.get("no");
+let remainingUnitsGlobal = 100;
+
+if (!USER_ID || !RACE_ID || !TOKEN) {
+  document.body.innerHTML = "<h1>不正アクセスです</h1>";
+  throw new Error("Missing params");
+}
+// 単勝
+const singleLocalUnits = {}; 
+// { petId: units }
+
+// 3連単
+const trifectaLocalUnits = {};
+// { "first-second-third": units }
+
+
+  
+/* =========================
+   ダミーデータ（Bot API想定）
+========================= */
+const pets = [];
+
+/* =========================
+   描画処理
+========================= */
+const grid = document.getElementById("petGrid");
+
+function renderPets(list) {
+  grid.innerHTML = "";
+
+  list.forEach(pet => {
+    const card = document.createElement("div");
+    card.className = "card";
+    const pinfo = pet.passive_skill ? PASSIVE_INFO[pet.passive_skill] : null;
+    const passiveHtml = pinfo
+      ? `<div class="passive">
+           <div class="passive-name">${pinfo.emoji} ${pinfo.label}</div>
+           <div class="passive-desc">${pinfo.description}</div>
+         </div>`
+      : `<div class="passive none">
+           <div class="passive-name">🧩 パッシブ：なし</div>
+         </div>`;
+
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="pet-gif">
+          <img src="${pet.img}">
+        </div>
+        <div class="pet-info">
+          <div class="pet-name">${pet.name}</div>
+          <div class="condition ${pet.condition}">
+            コンディション：${pet.conditionText}
+          </div>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat">${pet.stats.speed}<span>SPEED</span></div>
+        <div class="stat">${pet.stats.power}<span>POWER</span></div>
+        <div class="stat">${pet.stats.stamina}<span>STAM</span></div>
+      </div>
+      ${passiveHtml}
+
+      <div class="odds">オッズ ${pet.odds}</div>
+
+      <div id="singleUnits-${pet.id}" class="my-bet">
+        ${pet.myAmount > 0 
+          ? `🎯 あなた：${Math.floor(pet.myAmount / 1000)}口`
+          : ""}
+      </div>
+
+      <div style="margin-top:10px;">
+        <input type="range"
+               min="1"
+               max="100"
+               value="1"
+               class="unit-slider"
+               id="slider-${pet.id}"
+               oninput="updateUnitDisplay(${pet.id})">
+
+        <div id="unit-display-${pet.id}"
+             style="text-align:center; margin-top:6px; font-size:0.85rem;">
+          1口（1,000 rrc）
+        </div>
+
+        <button class="buy-btn"
+                onclick="buyTicket(${pet.id})">
+          購入
+        </button>
+      </div>
+    `;
+
+    grid.appendChild(card);
+  });
+}
+/* =========================
+   スライダー表示
+========================= */
+  
+function updateUnitDisplay(petId) {
+  const slider = document.getElementById(`slider-${petId}`);
+  const display = document.getElementById(`unit-display-${petId}`);
+
+  const units = parseInt(slider.value);
+  const amount = units * 1000;
+
+  display.innerText =
+    `${units}口（${amount.toLocaleString()} rrc）`;
+}
+function updateAllSlidersMax() {
+
+  const sliders = document.querySelectorAll(".unit-slider");
+
+  sliders.forEach(slider => {
+
+    slider.max = remainingUnitsGlobal;
+
+    if (remainingUnitsGlobal <= 0) {
+      slider.value = 0;
+      slider.disabled = true;
+    }
+
+    const petId = slider.id.split("-")[1];
+    updateUnitDisplay(petId);
+  });
+}
+/* =========================
+   オッズ計算
+========================= */
+function calcOdds(stats) {
+  const total = stats.speed * 1.2 + stats.power * 1.1 + stats.stamina;
+  const base = 1200 / total;
+
+  // 最低1.5倍、最大50倍
+  return Math.min(50, Math.max(1.5, base)).toFixed(1);
+}
+
+async function loadRacePets() {
+
+  if (!RACE_ID) {
+    alert("レースIDがありません");
+    return;
+  }
+
+  window.currentScheduleId = RACE_ID;
+
+  grid.innerHTML = "<div style='color:#9ca3af'>読み込み中...</div>";
+
+  const res = await fetch(
+    `${API_BASE}/api/race/by-id/${GUILD_ID}/${RACE_ID}?user=${USER_ID}&race_class=${MODE}`
+  );
+
+  if (!res.ok) {
+    alert("出走情報を取得できません");
+    return;
+  }
+
+  const data = await res.json();
+
+  if (!data.locked || !data.pets || data.pets.length === 0) {
+    alert("まだ購入できるレースがありません");
+    return;
+  }
+
+  if (data.phase !== "betting") {
+    grid.innerHTML =
+      `<div style="color:#f87171; text-align:center;">
+        ⛔ 現在購入できません<br>
+        状態：${data.phase}
+      </div>`;
+    return;
+  }
+
+  const pets = data.pets.map(p => ({
+    id: p.pet_id,
+    name: p.name,
+    img: `/pets/${p.adult_key}.png`,
+    condition: p.condition_class,
+    conditionText: p.condition_label,
+    stats: {
+      speed: p.speed,
+      power: p.power,
+      stamina: p.stamina
+    },
+    odds: p.odds,
+    passive_skill: p.passive_skill || null,
+    myAmount: p.my_amount || 0
+  }));
+
+  renderPets(pets);
+  updateAllSlidersMax();
+  populateTrifectaSelects(pets);
+  setupTrifectaEvents();
+  loadTrifectaPool();
+}
+
+function populateTrifectaSelects(pets) {
+  const first = document.getElementById("firstSelect");
+  const second = document.getElementById("secondSelect");
+  const third = document.getElementById("thirdSelect");
+
+  first.innerHTML = '<option value="">1着</option>';
+  second.innerHTML = '<option value="">2着</option>';
+  third.innerHTML = '<option value="">3着</option>';
+
+  pets.forEach(p => {
+    first.add(new Option(p.name, p.id));
+    second.add(new Option(p.name, p.id));
+    third.add(new Option(p.name, p.id));
+  });
+}  
+
+
+function updateTrifectaDisplay() {
+  const slider = document.getElementById("trifectaSlider");
+  const units = parseInt(slider.value);
+  const amount = units * 10000;
+
+  document.getElementById("trifectaDisplay").innerText =
+    `${units}口（${amount.toLocaleString()} rrc）`;
+}
+function setupTrifectaEvents() {
+  document.getElementById("firstSelect").onchange = updateTrifectaOdds;
+  document.getElementById("secondSelect").onchange = updateTrifectaOdds;
+  document.getElementById("thirdSelect").onchange = updateTrifectaOdds;
+
+  document.getElementById("buyTrifectaBtn").onclick = buyTrifecta;
+}
+
+async function updateTrifectaOdds() {
+
+  const firstSelect = document.getElementById("firstSelect");
+  const secondSelect = document.getElementById("secondSelect");
+  const thirdSelect = document.getElementById("thirdSelect");
+  const trifectaOdds = document.getElementById("trifectaOdds");
+
+  const first = firstSelect.value;
+  const second = secondSelect.value;
+  const third = thirdSelect.value;
+
+  if (!first || !second || !third) {
+    trifectaOdds.innerText = "オッズ：--";
+    return;
+  }
+
+  if (new Set([first, second, third]).size !== 3) {
+    trifectaOdds.innerText = "同じおあしすっちは選べません";
+    return;
+  }
+
+  const res = await fetch(
+    `${API_BASE}/api/trifecta/odds?guild=${GUILD_ID}&schedule_id=${window.currentScheduleId}&first=${first}&second=${second}&third=${third}`
+  );
+
+  if (!res.ok) {
+    trifectaOdds.innerText = "オッズ取得失敗";
+    return;
+  }
+
+  const data = await res.json();
+
+  if (data.status === "no_bets") {
+    trifectaOdds.innerText = "オッズ：未成立";
+  } else {
+    trifectaOdds.innerText = `オッズ：${data.odds}倍`;
+  }
+  const key = `${first}-${second}-${third}`;
+
+  document.getElementById("myTrifectaUnits").textContent =
+    trifectaLocalUnits[key]
+      ? `🎯 この組み合わせ：${trifectaLocalUnits[key]}口購入中`
+      : "";
+}
+
+
+async function loadTrifectaPool() {
+
+  const res = await fetch(
+    `${API_BASE}/api/trifecta/pool?guild=${GUILD_ID}&schedule_id=${window.currentScheduleId}`
+  );
+
+  if (!res.ok) return;
+
+  const data = await res.json();
+
+  document.getElementById("trifectaPool").innerText =
+    `💰現在プール：${data.pool.toLocaleString()} rrc`;
+}  
+async function buyTrifecta() {
+
+  const first = document.getElementById("firstSelect").value;
+  const second = document.getElementById("secondSelect").value;
+  const third = document.getElementById("thirdSelect").value;
+  const units = parseInt(
+    document.getElementById("trifectaSlider").value
+  );
+
+  const amount = units * 10000;
+
+  if (!first || !second || !third) {
+    alert("組み合わせを選択してください");
+    return;
+  }
+
+  if (new Set([first, second, third]).size !== 3) {
+    alert("同じおあしすっちは選べません");
+    return;
+  }
+
+  if (!amount || amount <= 0) {
+    alert("購入金額を入力してください");
+    return;
+  }
+
+  const TRI_UNIT = 10000;
+  const TRI_MAX  = 100000; // 10口
+
+  if (amount % TRI_UNIT !== 0) {
+    alert("3連単は1口10,000rrc単位です");
+    return;
+  }
+
+  if (amount > TRI_MAX) {
+    alert("3連単は最大10口（100,000rrc）までです");
+    return;
+  }
+
+  const res = await fetch(`${API_BASE}/api/trifecta/buy`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      user: USER_ID,
+      guild: GUILD_ID,
+      race: parseInt(window.currentScheduleId), // ← 修正
+      first: parseInt(first),
+      second: parseInt(second),
+      third: parseInt(third),
+      amount: amount,
+      token: TOKEN
+    })
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    alert(data.detail || "購入失敗");
+    return;
+  }
+
+  alert(`3連単購入成功！`);
+
+  const key = `${first}-${second}-${third}`;
+
+  // ローカル加算
+  trifectaLocalUnits[key] =
+    (trifectaLocalUnits[key] || 0) + units;
+
+  // 表示更新
+  document.getElementById("myTrifectaUnits").textContent =
+    `🎯 この組み合わせ：${trifectaLocalUnits[key]}口購入中`;
+
+  const slider = document.getElementById("trifectaSlider");
+
+
+  if (data.remaining_units <= 0) {
+    slider.value = 0;
+    slider.disabled = true;
+  } else {
+    slider.disabled = false;
+    slider.value = 1;
+  }
+
+  updateTrifectaDisplay();
+  // ★ここまで追加
+
+  loadBalance();
+  updateTrifectaOdds();
+  loadTrifectaPool();
+
+}
+/* =========================
+   購入（仮）
+========================= */
+async function buyTicket(petId) {
+
+  const slider = document.getElementById(`slider-${petId}`);
+  const units = parseInt(slider.value);
+  const amount = units * 1000;
+
+  try {
+    const res = await fetch(
+      `${API_BASE}/api/bet`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          user: USER_ID,
+          guild: GUILD_ID,
+          race: parseInt(window.currentScheduleId),
+          pet_id: petId,
+          amount: amount,
+          token: TOKEN
+        })
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.detail || "購入失敗");
+      return;
+    }
+
+alert(`購入成功！
+${units}口購入しました
+残り購入可能: ${data.remaining_units}口`);
+
+// ★ ここからローカル加算
+singleLocalUnits[petId] =
+  (singleLocalUnits[petId] || 0) + units;
+
+// 表示更新
+document.getElementById(`singleUnits-${petId}`).textContent =
+  `🎯 あなた：${singleLocalUnits[petId]}口`;
+
+remainingUnitsGlobal = data.remaining_units;  // ← 追加
+
+updateAllSlidersMax();                       // ← 追加
+loadBalance();
+
+  } catch (err) {
+    alert("通信エラー");
+  }
+}
+async function loadBalance() {
+
+  if (!window.currentScheduleId) {
+    document.getElementById("balanceBox").innerText =
+      "残高取得失敗";
+    return;
+  }
+
+  const res = await fetch(
+    `${API_BASE}/api/balance?user=${USER_ID}&guild=${GUILD_ID}&race=${window.currentScheduleId}&token=${TOKEN}`
+  );
+
+  if (!res.ok) {
+    document.getElementById("balanceBox").innerText =
+      "残高取得失敗";
+    return;
+  }
+
+  const data = await res.json();
+
+  document.getElementById("balanceBox").innerText =
+    `残高: ${data.balance.toLocaleString()} rrc`;
+}
+/* 初期表示 */
+async function initPage() {
+  await loadRacePets();
+  await loadBalance();
+}
+
+initPage();
+
+// 🔄 更新ボタン
+document.getElementById("refreshBtn")
+  .addEventListener("click", () => {
+    loadRacePets();
+  });
+
+</script>
+
+</body>
+
+</html>
+
+

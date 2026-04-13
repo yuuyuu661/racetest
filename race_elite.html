@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Elite Race</title>
+
+<style>
+body {
+  margin: 0;
+  background: radial-gradient(circle at top, #020617, #000);
+  font-family: system-ui, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.race-wrapper {
+  position: relative;
+  width: 95vw;
+  max-width: 1100px;
+  height: 420px;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 0 40px rgba(0,0,0,0.8);
+}
+
+/* 背景 */
+.track-bg {
+  position: absolute;
+  inset: 0;
+  background-repeat: repeat-x;
+  background-size: 512px 100%;
+  z-index: 0;
+}
+.track-bg.grass {
+  background-image: url("static/track/grass.png");
+}
+.track-bg.dirt {
+  background-image: url("static/track/dirt.png");
+}
+
+/* レーン */
+.lane {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255,255,255,0.25);
+  z-index: 1;
+}
+
+/* ランナー */
+.runner {
+  position: absolute;
+  left: 120px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  overflow: hidden;         /* ← くり抜き */
+  transform: translateY(-50%);
+  box-shadow: 0 0 6px rgba(0,0,0,0.6);
+  z-index: 3;
+  background: #000;
+}
+.runner-img {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  top: 0;
+  left: 0;
+}
+.runner span {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.65rem;
+  white-space: nowrap;
+  color: white;
+  text-shadow: 0 1px 2px #000;
+}
+
+/* 看板 */
+.sign {
+  position: absolute;
+  bottom: 10px;
+  width: 80px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* カウントダウン */
+.count {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  background: rgba(0,0,0,0.3);
+}
+.count img {
+  width: 120px;
+}
+
+/* =========================
+   ゴール表示
+========================= */
+.goal {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 3rem;
+  font-weight: bold;
+  color: #fff;
+  background: rgba(0,0,0,0.4);
+  z-index: 20;
+  animation: fadeIn 0.6s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* =========================
+   リザルト一覧
+========================= */
+.result {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 30;
+}
+
+.result-panel {
+  background: rgba(15, 23, 42, 0.95);
+  border-radius: 16px;
+  padding: 24px 32px;
+  min-width: 260px;
+  box-shadow: 0 0 30px rgba(0,0,0,0.6);
+  animation: fadeIn 0.6s ease;
+}
+
+.result-panel h2 {
+  margin: 0 0 16px;
+  text-align: center;
+  font-size: 1.4rem;
+  letter-spacing: 0.1em;
+}
+
+.result-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 6px 0;
+  font-size: 1rem;
+}
+
+.result-row.gold   { color: gold; }
+.result-row.silver { color: silver; }
+.result-row.bronze { color: #cd7f32; }
+
+/* ゲート番号 */
+.gate-number {
+  position: absolute;
+  left: 40px;
+  width: 40px;
+  transform: translateY(-50%);
+  margin-top: -2px;
+  z-index: 4;
+}
+</style>
+</head>
+
+<body>
+<div style="
+  position:absolute;
+  top:16px;
+  right:16px;
+  z-index:50;
+">
+  <button id="refreshBtn" style="
+    padding:6px 12px;
+    border-radius:10px;
+    border:none;
+    background:#334155;
+    color:white;
+    cursor:pointer;
+  ">
+    🔄 更新
+  </button>
+</div>
+
+<div class="race-wrapper">
+  <div class="track-bg grass" id="trackBg"></div>
+</div>
+
+<script>
+
+/* =========================
+   API 設定（★追加）
+========================= */
+const API_BASE = "https://oasisbot-production.up.railway.app";
+
+
+
+const DEFAULT_GUILD_ID = "1420918259187712093";
+
+const params = new URLSearchParams(window.location.search);
+const MODE = "elite";
+const GUILD_ID = params.get("guild") || DEFAULT_GUILD_ID;
+const RACE_DATE = params.get("date");
+const RACE_NO = params.get("no");
+const RACE_ID = params.get("race");
+
+if (!RACE_ID) {
+  alert("race が不足しています");
+  throw new Error("Missing race");
+}
+if (!GUILD_ID) {
+  alert("guild が不足しています");
+  throw new Error("Missing guild");
+}
+
+function rand(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+/* =========================
+   サウンド定義
+========================= */
+const sounds = {
+  bgm: new Audio("static/se/bgm.mp3"),
+  start: new Audio("static/se/start.mp3"),
+  fervor: new Audio("static/se/fervor.mp3"),
+  stamina: new Audio("static/se/stamina.mp3")
+};
+
+// BGM設定
+sounds.bgm.loop = true;
+sounds.bgm.volume = 0.15;   // ★ デフォルト低め
+
+// 効果音
+sounds.start.volume = 0.7;
+sounds.fervor.volume = 0.6;
+sounds.stamina.volume = 0.6;
+/* レース設定 */
+const race = {
+  distance: 2000,
+  runners: []
+};
+
+/* 距離変換 */
+const METER_TO_PX = 2.8;
+const SIGN_INTERVAL = 500;
+const START_X = 120;
+// ゴール位置（距離 × px）
+let GOAL_X = race.distance * METER_TO_PX;
+
+/* 初期化 */
+const wrapper = document.querySelector(".race-wrapper");
+const bg = document.getElementById("trackBg");
+
+const laneHeight = wrapper.clientHeight / race.runners.length;
+const signs = [];
+
+let worldX = 0;
+let running = false;
+let goalShown = false;
+  
+/* レーン＆ランナー */
+const runners = [];
+
+function setupRunners(pets) {
+  runners.length = 0;
+  wrapper.querySelectorAll(".runner, .gate-number").forEach(e => e.remove());
+  const laneHeight = wrapper.clientHeight / pets.length;
+
+  pets.forEach((p, i) => {
+    const y = laneHeight * i + laneHeight / 2;
+
+    const runner = document.createElement("div");
+    runner.className = "runner";
+    runner.style.top = y + "px";
+
+    // ★ GIF追加
+    const img = document.createElement("img");
+    img.src = `/pets/${p.adult_key}.png`;
+    img.className = "runner-img";
+
+    runner.appendChild(img);
+    wrapper.appendChild(runner);
+
+    const label = document.createElement("span");
+    label.textContent = p.name;
+    runner.appendChild(label);
+    wrapper.appendChild(runner);
+
+    const gate = document.createElement("img");
+    gate.className = "gate-number";
+    gate.src = `static/number/number${i + 1}.png`;
+    gate.style.top = y + "px";
+    wrapper.appendChild(gate);
+
+    runners.push({
+      pet_id: p.pet_id,
+      name: p.name,
+      el: runner,
+      baseY: y,
+      phase: Math.random() * Math.PI * 2,
+
+      stats: { speed: p.speed, power: p.power, stamina: p.stamina },
+
+      // ★追加（物理）
+      pos: 0,          // 走行距離（mのつもりでOK）
+      vel: 0,          // 速度
+      staminaLeft: p.stamina, // 残スタミナ（演出用）
+
+      // ★DB結果
+      rank: null,
+      score: null,
+
+      // ★終盤収束用
+      targetRank: null
+    });
+  });
+}
+  
+const DISTANCE_BALANCE = {
+  1000: { speed: 1.4, power: 0.8, stamina: 0.5 },
+  1500: { speed: 1.2, power: 1.2, stamina: 0.8 },
+  2000: { speed: 0.9, power: 1.3, stamina: 1.3 },
+  2500: { speed: 0.6, power: 1.0, stamina: 1.6 }
+};
+
+/* 看板生成 */
+function setupSigns() {
+  // 既存削除
+  wrapper.querySelectorAll(".sign").forEach(e => e.remove());
+  signs.length = 0;
+
+  for (let m = SIGN_INTERVAL; m <= race.distance; m += SIGN_INTERVAL) {
+    const img = document.createElement("img");
+    img.className = "sign";
+    img.src = `static/signboard/${m}m.png`;
+    wrapper.appendChild(img);
+
+    signs.push({
+      x: m * METER_TO_PX,
+      el: img
+    });
+  }
+}
+
+/* カウントダウン */
+async function countdown() {
+  // ★ BGM開始（初回ユーザー操作後なので再生OK）
+  sounds.bgm.play();
+  const count = document.createElement("div");
+  count.className = "count";
+  wrapper.appendChild(count);
+
+  for (const n of [3,2,1]) {
+    count.innerHTML = `<img src="static/count/${n}.png">`;
+    await wait(1000);
+  }
+
+  count.remove();
+  sounds.start.play(); // ★ スタートSE
+  running = true;
+}
+  
+
+
+function wait(ms){
+  return new Promise(r => setTimeout(r, ms));
+}
+// =========================
+// ★ DB順位取得関数
+// =========================
+
+async function loadResultFromAPI(scheduleId, date) {
+  const res = await fetch(
+    `${API_BASE}/api/race/result/${GUILD_ID}/${date}/${scheduleId}`
+  );
+  if (!res.ok) throw new Error("result api failed");
+  const data = await res.json();
+  return data.results || [];
+}
+
+function applyFixedRanks(dbResults) {
+  dbResults.forEach(row => {
+    const r = runners.find(x => String(x.pet_id) === String(row.pet_id));
+    if (!r) return;
+    r.rank = row.rank;
+    r.targetRank = row.rank;
+    r.score = row.score;
+  });
+}
+function showGoal() {
+  const goal = document.createElement("div");
+  goal.className = "goal";
+  goal.textContent = "🏁 GOAL !!";
+  wrapper.appendChild(goal);
+}
+  
+
+function showResult(sorted) {
+  const result = document.createElement("div");
+  result.className = "result";
+
+  const panel = document.createElement("div");
+  panel.className = "result-panel";
+
+  panel.innerHTML = `<h2>🏆 RESULT</h2>`;
+
+  sorted.forEach((r, i) => {
+    const row = document.createElement("div");
+    row.className = "result-row";
+
+    if (i === 0) row.classList.add("gold");
+    if (i === 1) row.classList.add("silver");
+    if (i === 2) row.classList.add("bronze");
+
+    const name = r.el.querySelector("span").textContent;
+    row.innerHTML = `<span>${i + 1}着</span><span>${r.name}</span>`;
+
+    panel.appendChild(row);
+  });
+
+  result.appendChild(panel);
+  wrapper.appendChild(result);
+}
+let tick = 0;
+
+/* アニメーション */
+let lastTs = 0;
+
+function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+function animate(ts = performance.now()) {
+
+  if (goalShown) return;
+
+  const dt = lastTs ? (ts - lastTs) / 1000 : 0.016;
+  lastTs = ts;
+
+  tick += 0.1;
+
+  if (running) {
+
+    // ★ カメラ追従
+    const leader = runners.reduce(
+      (a,b)=> (a.pos > b.pos ? a : b),
+      runners[0]
+    );
+
+    worldX = clamp(
+      leader.pos * METER_TO_PX - 260,
+      0,
+      GOAL_X
+    );
+
+    const ratio = clamp(worldX / GOAL_X, 0, 1);
+
+    const startPhase  = ratio < 0.15;
+    const midPhase    = ratio >= 0.15 && ratio < 0.60;
+    const latePhase   = ratio >= 0.60 && ratio < 0.85;
+    const converge    = ratio >= 0.85;
+
+    const sortedByRank = [...runners].sort((a,b) =>
+      (a.targetRank||999) - (b.targetRank||999)
+    );
+
+    const idealOrder = new Map();
+    sortedByRank.forEach((r,i)=> idealOrder.set(r.pet_id, i));
+
+    runners.forEach(r => {
+
+      const sp = clamp(r.stats.speed   / 300, 0.2, 1.6);
+      const pw = clamp(r.stats.power   / 300, 0.2, 1.6);
+      const st = clamp(r.stats.stamina / 300, 0.2, 1.6);
+
+      const vmax = 10 + sp * 8;
+
+      let accel = startPhase ? 6.0 * pw
+                : midPhase   ? 2.2 * pw
+                : 1.0 * pw;
+
+      let fatigue = 1.0;
+      if (latePhase || converge) {
+        const tired = (ratio - 0.60) / 0.40;
+        fatigue = 1.0 - tired * (1.0 - (0.55 + st * 0.30));
+        fatigue = clamp(fatigue, 0.55, 1.0);
+      }
+
+      const desiredV = vmax * fatigue;
+
+      r.vel += (desiredV - r.vel) * clamp(accel * dt, 0.01, 0.25);
+      r.vel *= 1 + (Math.sin(tick + r.phase) * 0.003);
+
+      if (converge && r.targetRank != null) {
+
+        console.log("Converging:", r.pet_id, r.targetRank);
+
+        const live = [...runners].sort((a,b)=> b.pos - a.pos);
+        const liveIdx = live.findIndex(x => x.pet_id === r.pet_id);
+        const idealIdx = idealOrder.get(r.pet_id);
+
+        const diff = (liveIdx - idealIdx);
+        const corr = clamp(diff * 0.15, -0.35, 0.35);
+
+        r.vel *= (1 + corr * 0.03);
+      }
+
+      // 位置更新
+      r.pos += r.vel * dt;
+
+      const bob = Math.sin(tick + r.phase) * 4;
+      r.el.style.top = (r.baseY + bob) + "px";
+
+      let x = START_X + (r.pos * METER_TO_PX - worldX);
+
+      const minX = START_X;
+      const maxX = wrapper.clientWidth - 60;
+      x = clamp(x, minX, maxX);
+
+      r.el.style.left = x + "px";
+
+    }); // ← ここ超重要
+
+    // 背景更新
+    bg.style.backgroundPositionX = -worldX + "px";
+
+    // 看板更新
+    signs.forEach(s => {
+      s.el.style.left = (START_X + s.x - worldX) + "px";
+    });
+
+    // ゴール判定
+    if (worldX >= GOAL_X && !goalShown) {
+
+      goalShown = true;
+      running = false;
+
+      const sorted = [...runners].sort((a,b) => {
+        const ar = a.rank ?? 999;
+        const br = b.rank ?? 999;
+        if (ar !== br) return ar - br;
+        return b.pos - a.pos;
+      });
+
+      showGoal();
+      setTimeout(() => showResult(sorted), 1200);
+    }
+  }
+
+  requestAnimationFrame(animate);
+}
+
+/* スタート */
+async function startRaceFromAPI() {
+
+  const RACE_ID = params.get("race");
+
+  if (!RACE_ID) {
+    alert("レースIDがありません");
+    return;
+  }
+
+  const res = await fetch(
+    `${API_BASE}/api/race/by-id/${GUILD_ID}/${RACE_ID}?race_class=${MODE}`
+  );
+
+  if (!res.ok) {
+    alert("レース情報を取得できません");
+    return;
+  }
+
+  const data = await res.json();
+
+
+
+  if (!data.locked || !data.pets || data.pets.length === 0) {
+    alert("出走が確定していません");
+    return;
+  }
+
+  if (data.phase !== "racing") {
+    const overlay = document.createElement("div");
+    overlay.style.position = "absolute";
+    overlay.style.inset = "0";
+    overlay.style.background = "rgba(0,0,0,0.65)";
+    overlay.style.display = "flex";
+    overlay.style.alignItems = "center";
+    overlay.style.justifyContent = "center";
+    overlay.style.fontSize = "1.3rem";
+    overlay.style.color = "#facc15";
+    overlay.innerHTML = `現在の状態：${data.phase}`;
+    wrapper.appendChild(overlay);
+    return;
+  }
+
+  // 距離
+  const DISTANCE_MAP = {
+    "短距離": 1000,
+    "マイル": 1500,
+    "中距離": 2000,
+    "長距離": 2500
+  };
+
+  race.distance = DISTANCE_MAP[data.distance] || 2000;
+  GOAL_X = race.distance * METER_TO_PX;
+
+  bg.classList.remove("grass", "dirt");
+  bg.classList.add(data.surface === "ダート" ? "dirt" : "grass");
+
+  setupSigns();
+  setupRunners(data.pets);
+
+
+
+
+  // DB結果取得（schedule_idのみでOK）
+  const resultRes = await fetch(
+    `${API_BASE}/api/race/result/${GUILD_ID}/${data.race_date}/${data.schedule_id}?race_class=${MODE}`
+  );
+
+  if (resultRes.ok) {
+    const resultData = await resultRes.json();
+    applyFixedRanks(resultData.results || []);
+  }
+
+  worldX = 0;
+  goalShown = false;
+  running = false;
+
+  await countdown();
+  animate();
+}
+
+// ★ API経由で開始
+startRaceFromAPI();
+
+// 🔄 更新ボタン
+document.getElementById("refreshBtn")
+  .addEventListener("click", () => {
+    startRaceFromAPI();
+  });
+
+</script>
+
+</body>
+</html>
+
